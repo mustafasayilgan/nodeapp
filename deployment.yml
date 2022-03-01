@@ -16,6 +16,11 @@ spec:
     spec:
       containers:
       - name: nodeserver
-        image: mustafasayilgan/nodeapp:latest
+        image: mustafasayilgan/nodeapp:v1
+        
         ports:
         - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
