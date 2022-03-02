@@ -17,7 +17,7 @@ commands:
       dockerfile:
         type: string
       app_name:
-        type: strings
+        type: string
       branch:
         type: string
     steps:
