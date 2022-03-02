@@ -15,7 +15,7 @@ spec:
         app: nodeapp 
     spec:
       containers:
-      - name: nodeserver
+      - name: nodeapp
         image: mustafasayilgan/nodeapp:v1
         
         ports:
