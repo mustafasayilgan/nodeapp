@@ -21,6 +21,7 @@ commands:
       branch:
         type: string
     steps:
+      - run: npm install
       - run: docker build -t mustafasayilgan/<< parameters.app_name >>:$CIRCLE_SHA1 -f << parameters.dockerfile >> .
       - run: docker build -t mustafasayilgan/<< parameters.app_name >>:<< parameters.branch >>_latest -f << parameters.dockerfile >> .
       - run: docker login --username $DOCKER_LOGIN --password $DOCKER_PWD
@@ -88,9 +89,9 @@ jobs:
           gcp_project_name: << parameters.gcp_project_name >>          
 
 workflows:
-  test-build-deploy-master:
+  test-build-deploy:
     jobs:
-      - build-push-prod:
+      - build-push:
           filters:
             branches:
               only: main
