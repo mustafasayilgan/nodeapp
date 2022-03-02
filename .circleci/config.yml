@@ -95,6 +95,7 @@ workflows:
             branches:
               only: master
       - deploy:
+          namespace_name: default
           kube_cluster: sayilgan-k8s
           gcp_key_name: $GCLOUD_SERVICE_KEY
           gcp_project_name: lyrical-beach-341612          
