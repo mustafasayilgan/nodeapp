@@ -90,7 +90,7 @@ jobs:
 workflows:
   test-build-deploy-master:
     jobs:
-      - build-push-stage:
+      - build-push-prod:
           filters:
             branches:
               only: main
