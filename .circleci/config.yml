@@ -85,7 +85,7 @@ jobs:
           namespace_name: << parameters.namespace_name >>
           cluster: << parameters.kube_cluster >>
           deployment_name: nodeapp-deployment
-          app_name: nodeapp
+          app_name: nodeserver
           gcp_key_name: << parameters.gcp_key_name >>
           gcp_project_name: << parameters.gcp_project_name >>          
 
