@@ -21,8 +21,18 @@ commands:
       branch:
         type: string
     steps:
-      - run: npm install
-      - run: npm build
+      - run:
+          name: yarn update
+          command: "sudo npm install -g yarn"
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: Install Dependencies
+          command: npm install
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+           - ./node_modules
       - run: docker build -t mustafasayilgan/<< parameters.app_name >>:$CIRCLE_SHA1 -f << parameters.dockerfile >> .
       - run: docker build -t mustafasayilgan/<< parameters.app_name >>:<< parameters.branch >>_latest -f << parameters.dockerfile >> .
       - run: docker login --username $DOCKER_LOGIN --password $DOCKER_PWD
