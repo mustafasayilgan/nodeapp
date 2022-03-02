@@ -50,9 +50,10 @@ commands:
             echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
             sudo apt-get update
             sudo apt-get install -y kubectl
+
       - run: gcloud --quiet container clusters get-credentials << parameters.cluster >>
       
-      - run: kubectl set image deployment -n << parameters.deployment_name >> << parameters.app_name >>=mustafasayilgan/<< parameters.app_name >>:$CIRCLE_SHA1 --record
+      - run: kubectl set image deployment -n << parameters.namespace_name >> << parameters.deployment_name >> << parameters.app_name >>=mustafasayilgan/<< parameters.app_name >>:$CIRCLE_SHA1 --record
 jobs:
   build-push:
     executor: main-executor
@@ -81,6 +82,7 @@ jobs:
       - run: gcloud --quiet config set project << parameters.gcp_project_name >>
       - run: gcloud --quiet config set compute/zone us-central1-c
       - kube-deploy:
+          namespace_name: << parameters.namespace_name >>
           cluster: << parameters.kube_cluster >>
           deployment_name: nodeapp-deployment
           app_name: nodeapp
