@@ -64,7 +64,7 @@ jobs:
       - docker-build-push:
           dockerfile: Dockerfile
           app_name: nodeapp
-          branch: master
+          branch: main
   deploy:
     parameters:
       namespace_name:
@@ -88,12 +88,12 @@ jobs:
           gcp_project_name: << parameters.gcp_project_name >>          
 
 workflows:
-  test-build-deploy:
+  test-build-deploy-master:
     jobs:
       - build-push-stage:
           filters:
             branches:
-              only: master
+              only: main
       - deploy:
           kube_cluster: sayilgan-k8s
           gcp_key_name: $GCLOUD_SERVICE_KEY
