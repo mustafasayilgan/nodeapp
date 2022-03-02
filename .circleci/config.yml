@@ -64,7 +64,7 @@ jobs:
           version: 19.03.13
       - docker-build-push:
           dockerfile: Dockerfile
-          app_name: nodeapp
+          app_name: nodeserver
           branch: master
   deploy:
     parameters:
