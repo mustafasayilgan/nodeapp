@@ -1,0 +1,124 @@
+1) Kullanıcı tarayıcı adres barına adresi yazıp enter tuşuna bastığında hangi olaylar gerçekleşir. Kısaca 
+açıklar mısın?
+
+1- Bir web tarayıcısına bir URL girersiniz
+2- Tarayıcı, DNS aracılığıyla alan adının IP adresini arar.
+3-Tarayıcı, sunucuya bir HTTP isteği gönderir
+4-Sunucu bir HTTP yanıtı gönderir
+5-Tarayıcı HTML'yi oluşturmaya başlar.
+6-Tarayıcı, HTML'ye gömülü ek nesneler (images, css, JavaScript) için istekler gönderir ve 3-5 arasındaki adımları tekrarlar.
+7-Sayfa yüklendikten sonra, tarayıcı gerektiğinde daha fazla zaman uyumsuz istek gönderir.
+
+Tarayıcınıza “https://tr.mindbehind.com” yazdığınızda, olan ilk şey bir Alan Adı Sunucusunun (DNS) “tr.mindbehind.com” ile bir IP adresi eşleştirmesidir. Ardından tarayıcı sunucuya bir HTTP isteği gönderir ve sunucu bir HTTP yanıtı gönderir. Tarayıcı, CSS, JavaScript, İmages vb. gibi ek kaynakları talep ederken, HTML'yi sayfada oluşturmaya başlar. Sonraki her istek, bir istek/yanıt döngüsünü tamamlar ve sırayla tarayıcı tarafından işlenir. Daha sonra sayfa yüklendikten sonra bazı siteler daha fazla asenkron istekte bulunacaktır.
+
+2) Yazmış olduğun script çalıştığında mindbehind.com adresine erişemiyorum diye hata veriyor.
+Sunucuyu kontrol ettin sunucu ağ geçidine ve bildiğin bir ip adresine ping atabiliyor sorun nerde 
+olabilir? Sorunu nasıl çözerdin? 
+
+Sorun DNS server'da olabilir. Sorunu çözmek adına da /etc/resolv.conf dosyasını kontrol eder, doğru DNS server bilgilerini tekrardan cofigüre ederek update ederim.
+
+
+
+3) "filesystem is full" hatası alındığında 'df' komutu kullanabilir alan gösteriyorsa sebebi ne olabilir? 
+
+Dosya sisteminin %5'i (varsayılan olarak), ciddi sorunları önlemek için dosya sisteminin dolduğu durumlar için ayrılmıştır. 
+root'un bu güvenlik arabelleğini kullanmasına izin verilir ve kurulumunuzda root olmayan kullanıcılar bu dosya sistemi üzerinde herhangi bir işlem yapamaz. 
+
+
+7) Optimie Adımları-
+
+1. Çalışan süreci ve bağlantıları yükseltme
+
+worker_processes=1
+worker_connections = 1024
+şeklinde ayarladım.
+
+
+2.Arabellek boyutlarını
+
+client_body_buffer_size 10K;  >  
+client_header_buffer_size 1k; >  
+client_max_body_size 8m;      >
+large_client_header_buffers 4 4k; >
+
+şeklinde ayarladım.
+
+3. Timeouts'ları
+
+client_body_timeout 12;
+client_header_timeout 12;
+keepalive_timeout 15;
+send_timeout 10;
+
+şeklinde optimize ettim.
+
+Son olarak 
+worker_rlimit_nofile 30000;
+şeklinde bir optimizasyonum oldu.
+
+
+
+
+10) Kubernetes Cluster Yedekleme
+
+Kalıcı veri birimlerini yedekleyin ve geri yükleyin.
+
+Bu yöntem, etcd node'ları için kalıcı veri birimlerinin kopyalanmasını ve açık kaynaklı bir Kubernetes yedekleme/geri yükleme aracı olan Velero ile yeni bir dağıtımda yeniden kullanılmasını içerir.
+
+1.adım : Velero'yu kaynak cluster'a kurun.
+
+Not: Velero, Kubernetes kaynaklarını yedeklemeyi ve geri yüklemeyi kolaylaştıran açık kaynaklı bir araçtır. Bir kümenin tamamını veya kalıcı birimler gibi belirli kaynakları yedeklemek için kullanılabilir.
+
+BUCKET-NAME placeholderını depolama paketinizin adıyla ve SECRET-FILENAME placeholderını credential file dosyanızın yolu ile değiştirmeyi unutmadan, Velero'yu kaynak kümeye yükleyin
+
+Çalıştırılacak komut şu şekildedir: $ velero install --provider gcp --plugins velero/velero-plugin-for-gcp:v1.0.0 --bucket BUCKET-NAME --secret-file SECRET-FILENAME
+
+($ kubectl get pods -n velero komutu ile check edebilirsiniz kurulumu)
+
+2.adım : Kaynak cluester'da etcd deployment'ı yedekleyin.
+
+Sonrasında Velero'yu kullanarak kalıcı birimleri yedekleyin.
+Cluster'da çalışan etcd deploymentında ki birimlerin bir yedeğini oluşturun. Bu yedekleme tüm nodeları içerecektir.
+
+$ velero backup create etcd-backup --include-resources pvc,pv --selector app.kubernetes.io/instance=etcd
+
+Yedeklemenin içeriğini görüntülemek ve gerekli tüm kaynakları içerdiğini doğrulamak için aşağıdaki komutu yürütün:
+
+$ velero backup describe etcd-backup  --details
+
+Yedekleme verilerinin üzerine yazılmasını önlemek için paketi salt okunur erişime geçirin.
+
+$ kubectl patch backupstoragelocation default -n velero --type merge --patch '{"spec":{"accessMode":"ReadOnly"}}'
+
+3. adım
+
+Yeni cluster'da etcd deploymentını geri yükleyin.
+
+
+Bu aşamada artık kalıcı birimleri geri yükleyebilir ve bunları hedef cluster'da yeni bir etcd deploymentı ile entegre edebilirsiniz. 
+
+Yedekleme yapılacak yeni cluster'a 1. adımda ki gibi Velero'yu kurun.
+Yine 1. adımda bahsettiğim gibi kurulumu kontrol etmek adına $ kubectl get pods -n velero ile kontrol sağlayabilirsiniz.
+
+Velero'yu kullanarak kaynak cluster ile aynı namespace'de ki kalıcı birimleri geri yükleyin.
+Çalışacak komut şu şekildedir: $ velero restore create --from-backup etcd-backup
+
+Yüklenen kalıcı birimlerinin doğruluğunun kontrolü için aşağıda ki komutu çalıştırabilirsiniz.
+
+$ kubectl get pvc --namespace default
+
+Yeni bir etcd deployment dosyası oluşturun. Eski deployment ile aynı namspace ve diğer parametreleri kullanın. PASSWORD placeholderını eski sürümde kullanılan veritabanı parolasıyla değiştirin.
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install etcd bitnami/etcd \
+    --set auth.rbac.rootPassword=PASSWORD \
+    --set statefulset.replicaCount=3
+
+Yeni deployment'a bağlanın ve eski verilerinizin eksiksiz olduğunu doğrulayın.
+export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=etcd,app.kubernetes.io/instance=etcd" -o jsonpath="{.items[0].metadata.name}")
+
+kubectl exec -it $POD_NAME -- etcdctl --user root:PASSWORD get /message1
+kubectl exec -it $POD_NAME -- etcdctl --user root:PASSWORD get /message2
+
+
+Tüm bu işlemlerden sonra sorunsuz bir şekilde cluster'ın yedeğini alabiliriz.
